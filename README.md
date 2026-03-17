@@ -14,7 +14,7 @@
 Most doc tools require you to **write the docs yourself**. Docforge **scans your codebase and generates them for you** — overview, architecture diagrams, API reference, and a health score that keeps your team honest.
 
 ```bash
-npx docforge
+npx docforge-gen
 ```
 
 That's it.
@@ -46,10 +46,10 @@ Zero config. Zero manual writing.
 
 ```bash
 # Run instantly — no install needed
-npx docforge
+npx docforge-gen
 
 # Or install globally
-npm install -g docforge
+npm install -g docforge-gen
 
 # Just the health check
 docforge health
