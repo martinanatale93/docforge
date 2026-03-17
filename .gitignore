@@ -1,5 +1,5 @@
 node_modules/
-docs/
+docs-gen/
 *.js.map
 *.d.ts.map
 .DS_Store

@@ -1,6 +1,6 @@
 {
   "name": "docforge-gen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zero-config documentation for any repo. One command. Always fresh.",
   "main": "dist/action/index.js",
   "bin": {

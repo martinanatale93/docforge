@@ -25,10 +25,10 @@ That's it.
 
 **Before:** your repo has no docs.
 
-**After:** Docforge generates a complete `docs/` folder:
+**After:** Docforge generates a complete `docs-gen/` folder:
 
 ```
-docs/
+docs-gen/
  ├── overview.md       ← Project summary, quick start, tech stack
  ├── architecture.md   ← Mermaid diagrams, module breakdown, dependencies
  ├── api.md            ← Auto-detected endpoints with curl examples
@@ -136,7 +136,7 @@ The feature that makes teams adopt Docforge. Every run scores your documentation
 
 | Input | Default | Description |
 |-------|---------|-------------|
-| `output-dir` | `docs` | Where to write generated docs |
+| `output-dir` | `docs-gen` | Where to write generated docs |
 | `include-health-score` | `true` | Include health score in output |
 | `commit-changes` | `true` | Auto-commit docs back to repo |
 | `commit-message` | `docs: auto-update documentation [skip ci]` | Commit message |
@@ -167,7 +167,7 @@ The feature that makes teams adopt Docforge. Every run scores your documentation
 | Option | Default | Description |
 |--------|---------|-------------|
 | `-d, --dir <path>` | `.` | Project root directory |
-| `-o, --output <path>` | `docs` | Output directory |
+| `-o, --output <path>` | `docs-gen` | Output directory |
 | `--no-health` | — | Skip health score |
 | `-s, --sections <list>` | `overview,architecture,api,structure` | Sections to generate |
 

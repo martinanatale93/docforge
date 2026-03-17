@@ -10,7 +10,7 @@ inputs:
   output-dir:
     description: 'Directory where generated docs will be written'
     required: false
-    default: 'docs'
+    default: 'docs-gen'
   include-health-score:
     description: 'Include a documentation health score in output'
     required: false
