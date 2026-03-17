@@ -1,0 +1,167 @@
+#!/usr/bin/env node
+
+import { Command } from 'commander';
+import * as path from 'path';
+import chalk from 'chalk';
+import { runAutoDoc } from '../engine';
+import { scanRepo } from '../scanner';
+import { calculateHealth, formatHealthReport } from '../health';
+import { AutoDocConfig } from '../types';
+
+// ─── CLI Entry Point ─────────────────────────────────────────
+// Usage:
+//   docforge                     generate docs for current directory
+//   docforge --dir ./my-project  generate docs for a specific directory
+//   docforge health              just run the health check
+//   docforge explain src/services  explain a specific folder
+
+const program = new Command();
+
+program
+  .name('docforge')
+  .description('Zero-config documentation for any repo. One command. Always fresh.')
+  .version('1.0.0');
+
+// ─── Main generate command ───────────────────────────────────
+
+program
+  .command('generate', { isDefault: true })
+  .description('Generate documentation for the repository')
+  .option('-d, --dir <path>', 'Root directory of the project', '.')
+  .option('-o, --output <path>', 'Output directory for docs', 'docs')
+  .option('--no-health', 'Skip health score generation')
+  .option('-s, --sections <list>', 'Comma-separated sections to generate', 'overview,architecture,api,structure')
+  .action(async (opts) => {
+    console.log(chalk.blue.bold('\n� Docforge\n'));
+
+    const config: AutoDocConfig = {
+      rootDir: path.resolve(opts.dir),
+      outputDir: opts.output,
+      includeHealthScore: opts.health !== false,
+      commitChanges: false,
+      commitMessage: '',
+      sections: opts.sections.split(',').map((s: string) => s.trim()),
+    };
+
+    try {
+      const result = await runAutoDoc(config);
+
+      console.log('');
+      console.log(chalk.green.bold(`✅ Generated ${result.sections.length} documentation files`));
+      console.log(chalk.gray(`   Output: ${result.outputDir}`));
+
+      if (config.includeHealthScore) {
+        const scoreColor = result.healthScore >= 80 ? chalk.green
+          : result.healthScore >= 50 ? chalk.yellow
+          : chalk.red;
+        console.log(scoreColor(`   Health Score: ${result.healthScore}%`));
+      }
+
+      console.log('');
+    } catch (err: any) {
+      console.error(chalk.red(`Error: ${err.message}`));
+      process.exit(1);
+    }
+  });
+
+// ─── Health check command ────────────────────────────────────
+
+program
+  .command('health')
+  .description('Run documentation health check only')
+  .option('-d, --dir <path>', 'Root directory of the project', '.')
+  .action(async (opts) => {
+    console.log(chalk.blue.bold('\n🏥 Documentation Health Check\n'));
+
+    try {
+      const repo = await scanRepo(path.resolve(opts.dir));
+      const health = calculateHealth(repo);
+
+      const scoreColor = health.percentage >= 80 ? chalk.green
+        : health.percentage >= 50 ? chalk.yellow
+        : chalk.red;
+
+      console.log(scoreColor.bold(`   Documentation Score: ${health.percentage}%\n`));
+
+      for (const check of health.checks) {
+        const icon = check.passed ? chalk.green('✅') : chalk.red('❌');
+        const pts = check.passed ? chalk.green(`${check.points}/${check.maxPoints}`) : chalk.red(`${check.points}/${check.maxPoints}`);
+        console.log(`   ${icon} ${check.name} ${chalk.gray(`(${pts})`)}`);
+      }
+
+      if (health.missing.length > 0) {
+        console.log(chalk.yellow('\n   Missing:'));
+        for (const item of health.missing) {
+          console.log(chalk.yellow(`   - ${item}`));
+        }
+      }
+
+      console.log('');
+    } catch (err: any) {
+      console.error(chalk.red(`Error: ${err.message}`));
+      process.exit(1);
+    }
+  });
+
+// ─── Explain command ─────────────────────────────────────────
+
+program
+  .command('explain <path>')
+  .description('Explain what a specific folder or file does')
+  .option('-d, --dir <path>', 'Root directory of the project', '.')
+  .action(async (targetPath, opts) => {
+    console.log(chalk.blue.bold('\n🔎 Docforge Explain\n'));
+
+    try {
+      const repo = await scanRepo(path.resolve(opts.dir));
+
+      // Find matching folder
+      const folder = repo.folders.find(f => f.path === targetPath || f.path === targetPath.replace(/\/$/, ''));
+      if (folder) {
+        console.log(chalk.white.bold(`   ${folder.path}/`));
+        console.log('');
+        console.log(`   ${folder.description}`);
+        console.log(chalk.gray(`   ${folder.fileCount} files`));
+
+        // List sub-items
+        const subFolders = repo.folders.filter(f =>
+          f.path.startsWith(folder.path + '/') &&
+          f.path.split('/').length === folder.path.split('/').length + 1
+        );
+        const subFiles = repo.files.filter(f =>
+          f.path.startsWith(folder.path + '/') &&
+          f.path.split('/').length === folder.path.split('/').length + 1
+        );
+
+        if (subFolders.length > 0) {
+          console.log(chalk.gray('\n   Sub-directories:'));
+          for (const sf of subFolders) {
+            console.log(`   📁 ${sf.name}/ — ${sf.description}`);
+          }
+        }
+
+        if (subFiles.length > 0) {
+          console.log(chalk.gray('\n   Files:'));
+          for (const sf of subFiles.slice(0, 20)) {
+            console.log(`   📄 ${sf.name}`);
+          }
+          if (subFiles.length > 20) {
+            console.log(chalk.gray(`   ... and ${subFiles.length - 20} more`));
+          }
+        }
+      } else {
+        console.log(chalk.yellow(`   Could not find folder: ${targetPath}`));
+        console.log(chalk.gray('   Available folders:'));
+        for (const f of repo.folders.slice(0, 15)) {
+          console.log(chalk.gray(`   - ${f.path}/`));
+        }
+      }
+
+      console.log('');
+    } catch (err: any) {
+      console.error(chalk.red(`Error: ${err.message}`));
+      process.exit(1);
+    }
+  });
+
+program.parse();

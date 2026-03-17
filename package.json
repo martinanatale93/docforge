@@ -1,0 +1,39 @@
+{
+  "name": "docforge",
+  "version": "1.0.0",
+  "description": "Zero-config documentation for any repo. One command. Always fresh.",
+  "main": "dist/action/index.js",
+  "bin": {
+    "docforge": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli/index.js",
+    "action": "node dist/action/index.js"
+  },
+  "keywords": [
+    "github-action",
+    "documentation",
+    "docforge",
+    "auto-doc",
+    "readme",
+    "architecture",
+    "health-score",
+    "mermaid",
+    "api-docs"
+  ],
+  "author": "martinanatale",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,38 @@
+# ──────────────────────────────────────────────
+# Example: Auto-generate docs on every push to main
+# ──────────────────────────────────────────────
+# Add this file to your repo at:
+#   .github/workflows/docforge.yml
+#
+# Then add the action to your repo and docs will
+# be auto-generated and committed on every push.
+# ──────────────────────────────────────────────
+
+name: Auto Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Documentation
+        uses: martinanatale/docforge@v1
+        with:
+          output-dir: 'docs'
+          include-health-score: 'true'
+          commit-changes: 'true'
+          commit-message: 'docs: auto-update documentation [skip ci]'
+          sections: 'overview,architecture,api,structure'

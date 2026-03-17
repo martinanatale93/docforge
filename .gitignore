@@ -1,0 +1,6 @@
+node_modules/
+dist/
+docs/
+*.js.map
+*.d.ts.map
+.DS_Store

@@ -1,0 +1,41 @@
+name: 'Docforge'
+description: 'Zero-config documentation for any repo. Scans your code, generates docs, and scores your doc health — on every push.'
+author: 'martinanatale'
+
+branding:
+  icon: 'book-open'
+  color: 'blue'
+
+inputs:
+  output-dir:
+    description: 'Directory where generated docs will be written'
+    required: false
+    default: 'docs'
+  include-health-score:
+    description: 'Include a documentation health score in output'
+    required: false
+    default: 'true'
+  commit-changes:
+    description: 'Automatically commit generated docs back to the repo'
+    required: false
+    default: 'true'
+  commit-message:
+    description: 'Commit message for auto-committed docs'
+    required: false
+    default: 'docs: auto-update documentation [skip ci]'
+  sections:
+    description: 'Comma-separated list of doc sections to generate (overview,architecture,api,structure)'
+    required: false
+    default: 'overview,architecture,api,structure'
+
+outputs:
+  health-score:
+    description: 'Documentation health score (0-100)'
+  docs-path:
+    description: 'Path to the generated docs directory'
+  files-generated:
+    description: 'Number of documentation files generated'
+
+runs:
+  using: 'node20'
+  main: 'dist/action/index.js'

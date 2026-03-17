@@ -1,0 +1,43 @@
+# ──────────────────────────────────────────────
+# Example: PR-only docs with health check comment
+# ──────────────────────────────────────────────
+# This workflow generates docs only on PRs and
+# does NOT commit — useful for reviewing docs
+# in the CI output / summary.
+# ──────────────────────────────────────────────
+
+name: Documentation Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  doc-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Documentation Health
+        id: docs
+        uses: martinanatale/docforge@v1
+        with:
+          output-dir: 'docs'
+          include-health-score: 'true'
+          commit-changes: 'false'
+          sections: 'overview,architecture,api,structure'
+
+      - name: Comment health score on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = '${{ steps.docs.outputs.health-score }}';
+            const emoji = parseInt(score) >= 80 ? '🟢' : parseInt(score) >= 50 ? '🟡' : '🔴';
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## ${emoji} Documentation Health: ${score}%\n\nGenerated ${${{ steps.docs.outputs.files-generated }}} documentation files.`
+            });
