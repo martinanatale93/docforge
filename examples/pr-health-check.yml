@@ -21,7 +21,7 @@ jobs:
 
       - name: Check Documentation Health
         id: docs
-        uses: martinanatale/docforge@v1
+        uses: martinanatale93/docforge@v1
         with:
           output-dir: 'docs'
           include-health-score: 'true'

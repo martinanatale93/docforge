@@ -6,7 +6,7 @@
 <p align="center">
   <a href="#quick-start"><img src="https://img.shields.io/badge/setup-30%20seconds-brightgreen" alt="Setup time" /></a>
   <a href="#health-score"><img src="https://img.shields.io/badge/health%20score-0--100%25-blue" alt="Health score" /></a>
-  <a href="https://github.com/martinanatale/docforge/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow" alt="License" /></a>
+  <a href="https://github.com/martinanatale93/docforge/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow" alt="License" /></a>
 </p>
 
 <br />
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: martinanatale/docforge@v1
+      - uses: martinanatale93/docforge@v1
 ```
 
 Docs are generated and committed on every push. Done.

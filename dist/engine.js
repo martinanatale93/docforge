@@ -1,0 +1,92 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runAutoDoc = runAutoDoc;
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const scanner_1 = require("./scanner");
+const generators_1 = require("./generators");
+const health_1 = require("./health");
+// ─── Core engine ─────────────────────────────────────────────
+// Orchestrates scanning → generating → writing docs.
+async function runAutoDoc(config) {
+    // 1. Scan
+    console.log('🔍 Scanning repository...');
+    const repo = await (0, scanner_1.scanRepo)(config.rootDir);
+    console.log(`   Found ${repo.files.length} files, ${repo.folders.length} folders, ${repo.apis.length} API endpoints`);
+    // 2. Generate sections
+    console.log('📝 Generating documentation...');
+    const sections = [];
+    const generatorMap = {
+        overview: generators_1.generateOverview,
+        architecture: generators_1.generateArchitecture,
+        api: generators_1.generateApiDocs,
+        structure: generators_1.generateStructure,
+    };
+    for (const sectionName of config.sections) {
+        const generator = generatorMap[sectionName];
+        if (generator) {
+            const section = generator(repo);
+            sections.push(section);
+            console.log(`   ✓ ${section.title}`);
+        }
+    }
+    // 3. Health check
+    let healthScore = 0;
+    if (config.includeHealthScore) {
+        console.log('🏥 Running health checks...');
+        const health = (0, health_1.calculateHealth)(repo);
+        healthScore = health.percentage;
+        sections.push({
+            filename: 'health.md',
+            title: 'Documentation Health',
+            content: (0, health_1.formatHealthReport)(health),
+        });
+        console.log(`   Score: ${health.percentage}%`);
+    }
+    // 4. Write files
+    const outputDir = path.resolve(config.rootDir, config.outputDir);
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+    console.log(`📂 Writing docs to ${config.outputDir}/`);
+    for (const section of sections) {
+        const filePath = path.join(outputDir, section.filename);
+        fs.writeFileSync(filePath, section.content, 'utf-8');
+        console.log(`   ✓ ${section.filename}`);
+    }
+    return { sections, healthScore, outputDir };
+}
+//# sourceMappingURL=engine.js.map

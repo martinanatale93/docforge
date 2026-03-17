@@ -1,0 +1,128 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __importStar(require("@actions/core"));
+const exec = __importStar(require("@actions/exec"));
+const path = __importStar(require("path"));
+const engine_1 = require("../engine");
+// ─── GitHub Action Entry Point ───────────────────────────────
+// Runs inside GitHub Actions, reads inputs from action.yml,
+// generates docs, and optionally commits them.
+async function run() {
+    try {
+        const outputDir = core.getInput('output-dir') || 'docs';
+        const includeHealthScore = core.getInput('include-health-score') !== 'false';
+        const commitChanges = core.getInput('commit-changes') !== 'false';
+        const commitMessage = core.getInput('commit-message') || 'docs: auto-update documentation [skip ci]';
+        const sectionsInput = core.getInput('sections') || 'overview,architecture,api,structure';
+        const sections = sectionsInput.split(',').map(s => s.trim());
+        const rootDir = process.env.GITHUB_WORKSPACE || process.cwd();
+        core.info('� Docforge — GitHub Action');
+        core.info(`Repository: ${path.basename(rootDir)}`);
+        core.info(`Output: ${outputDir}/`);
+        core.info(`Sections: ${sections.join(', ')}`);
+        const config = {
+            rootDir,
+            outputDir,
+            includeHealthScore,
+            commitChanges,
+            commitMessage,
+            sections,
+        };
+        const result = await (0, engine_1.runAutoDoc)(config);
+        // Set outputs
+        core.setOutput('health-score', result.healthScore.toString());
+        core.setOutput('docs-path', result.outputDir);
+        core.setOutput('files-generated', result.sections.length.toString());
+        // Commit changes if configured
+        if (commitChanges) {
+            core.info('📤 Committing documentation changes...');
+            try {
+                // Configure git
+                await exec.exec('git', ['config', 'user.name', 'docforge[bot]']);
+                await exec.exec('git', ['config', 'user.email', 'docforge[bot]@users.noreply.github.com']);
+                // Stage docs
+                await exec.exec('git', ['add', outputDir]);
+                // Check if there are changes
+                let hasChanges = false;
+                try {
+                    await exec.exec('git', ['diff', '--cached', '--quiet']);
+                }
+                catch {
+                    hasChanges = true;
+                }
+                if (hasChanges) {
+                    await exec.exec('git', ['commit', '-m', commitMessage]);
+                    await exec.exec('git', ['push']);
+                    core.info('✅ Documentation committed and pushed');
+                }
+                else {
+                    core.info('ℹ️ No documentation changes to commit');
+                }
+            }
+            catch (err) {
+                core.warning(`Could not commit changes: ${err.message}`);
+                core.warning('Make sure the workflow has write permissions (contents: write)');
+            }
+        }
+        // Summary
+        core.summary
+            .addHeading('� Docforge — Documentation Generated')
+            .addTable([
+            [
+                { data: 'Metric', header: true },
+                { data: 'Value', header: true },
+            ],
+            ['Files generated', result.sections.length.toString()],
+            ['Health score', `${result.healthScore}%`],
+            ['Output directory', outputDir],
+        ]);
+        if (result.sections.length > 0) {
+            core.summary.addHeading('Generated Files', 3);
+            const fileList = result.sections.map(s => `- \`${outputDir}/${s.filename}\` — ${s.title}`).join('\n');
+            core.summary.addRaw(fileList);
+        }
+        await core.summary.write();
+        core.info(`\n✅ Generated ${result.sections.length} documentation files`);
+        if (includeHealthScore) {
+            core.info(`📊 Documentation Health Score: ${result.healthScore}%`);
+        }
+    }
+    catch (error) {
+        core.setFailed(`Docforge failed: ${error.message}`);
+    }
+}
+run();
+//# sourceMappingURL=index.js.map
